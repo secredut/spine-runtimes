@@ -1,31 +1,31 @@
 /******************************************************************************
- * Spine Runtimes Software License
- * Version 2.1
+ * Spine Runtimes Software License v2.5
  * 
- * Copyright (c) 2013, Esoteric Software
+ * Copyright (c) 2013-2016, Esoteric Software
  * All rights reserved.
  * 
- * You are granted a perpetual, non-exclusive, non-sublicensable and
- * non-transferable license to install, execute and perform the Spine Runtimes
- * Software (the "Software") solely for internal use. Without the written
- * permission of Esoteric Software (typically granted by licensing Spine), you
- * may not (a) modify, translate, adapt or otherwise create derivative works,
- * improvements of the Software or develop new applications using the Software
- * or (b) remove, delete, alter or obscure any trademarks or any copyright,
- * trademark, patent or other intellectual property or proprietary rights
- * notices on or in the Software, including any copy thereof. Redistributions
- * in binary or source form must include this license and terms.
+ * You are granted a perpetual, non-exclusive, non-sublicensable, and
+ * non-transferable license to use, install, execute, and perform the Spine
+ * Runtimes software and derivative works solely for personal or internal
+ * use. Without the written permission of Esoteric Software (see Section 2 of
+ * the Spine Software License Agreement), you may not (a) modify, translate,
+ * adapt, or develop new applications using the Spine Runtimes or otherwise
+ * create derivative works or improvements of the Spine Runtimes or (b) remove,
+ * delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+ * or other intellectual property or proprietary rights notices on or in the
+ * Software, including any copy thereof. Redistributions in binary or source
+ * form must include this license and terms.
  * 
  * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
- * EVENT SHALL ESOTERIC SOFTARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+ * USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #include <spine/AnimationState.h>
@@ -80,7 +80,7 @@ void spAnimationState_dispose (spAnimationState* self) {
 	int i;
 	_spAnimationState* internal = SUB_CAST(_spAnimationState, self);
 	FREE(internal->events);
-	for (i = 0; i < self->trackCount; ++i)
+	for (i = 0; i < self->tracksCount; ++i)
 		_spAnimationState_disposeAllEntries(self, self->tracks[i]);
 	FREE(self->tracks);
 	FREE(self);
@@ -92,7 +92,7 @@ void spAnimationState_update (spAnimationState* self, float delta) {
 	int i;
 	float previousDelta;
 	delta *= self->timeScale;
-	for (i = 0; i < self->trackCount; ++i) {
+	for (i = 0; i < self->tracksCount; ++i) {
 		spTrackEntry* current = self->tracks[i];
 		if (!current) continue;
 
@@ -117,15 +117,15 @@ void spAnimationState_apply (spAnimationState* self, spSkeleton* skeleton) {
 	_spAnimationState* internal = SUB_CAST(_spAnimationState, self);
 
 	int i, ii;
-	int eventCount;
+	int eventsCount;
 	int entryChanged;
 	float time;
 	spTrackEntry* previous;
-	for (i = 0; i < self->trackCount; ++i) {
+	for (i = 0; i < self->tracksCount; ++i) {
 		spTrackEntry* current = self->tracks[i];
 		if (!current) continue;
 
-		eventCount = 0;
+		eventsCount = 0;
 
 		time = current->time;
 		if (!current->loop && time > current->endTime) time = current->endTime;
@@ -134,10 +134,10 @@ void spAnimationState_apply (spAnimationState* self, spSkeleton* skeleton) {
 		if (!previous) {
 			if (current->mix == 1) {
 				spAnimation_apply(current->animation, skeleton, current->lastTime, time,
-					current->loop, internal->events, &eventCount);
+					current->loop, internal->events, &eventsCount);
 			} else {
 				spAnimation_mix(current->animation, skeleton, current->lastTime, time,
-					current->loop, internal->events, &eventCount, current->mix);
+					current->loop, internal->events, &eventsCount, current->mix);
 			}
 		} else {
 			float alpha = current->mixTime / current->mixDuration * current->mix;
@@ -152,11 +152,11 @@ void spAnimationState_apply (spAnimationState* self, spSkeleton* skeleton) {
 				current->previous = 0;
 			}
 			spAnimation_mix(current->animation, skeleton, current->lastTime, time,
-				current->loop, internal->events, &eventCount, alpha);
+				current->loop, internal->events, &eventsCount, alpha);
 		}
 
 		entryChanged = 0;
-		for (ii = 0; ii < eventCount; ++ii) {
+		for (ii = 0; ii < eventsCount; ++ii) {
 			spEvent* event = internal->events[ii];
 			if (current->listener) {
 				current->listener(self, i, SP_ANIMATION_EVENT, event, 0);
@@ -195,16 +195,14 @@ void spAnimationState_apply (spAnimationState* self, spSkeleton* skeleton) {
 
 void spAnimationState_clearTracks (spAnimationState* self) {
 	int i;
-	for (i = 0; i < self->trackCount; ++i)
+	for (i = 0; i < self->tracksCount; ++i)
 		spAnimationState_clearTrack(self, i);
-	self->trackCount = 0;
+	self->tracksCount = 0;
 }
 
 void spAnimationState_clearTrack (spAnimationState* self, int trackIndex) {
-	_spAnimationState* internal = SUB_CAST(_spAnimationState, self);
-
 	spTrackEntry* current;
-	if (trackIndex >= self->trackCount) return;
+	if (trackIndex >= self->tracksCount) return;
 	current = self->tracks[trackIndex];
 	if (!current) return;
 
@@ -213,18 +211,17 @@ void spAnimationState_clearTrack (spAnimationState* self, int trackIndex) {
 
 	self->tracks[trackIndex] = 0;
 
-	if (current->previous) internal->disposeTrackEntry(current->previous);
 	_spAnimationState_disposeAllEntries(self, current);
 }
 
 spTrackEntry* _spAnimationState_expandToIndex (spAnimationState* self, int index) {
 	spTrackEntry** newTracks;
-	if (index < self->trackCount) return self->tracks[index];
+	if (index < self->tracksCount) return self->tracks[index];
 	newTracks = CALLOC(spTrackEntry*, index + 1);
-	memcpy(newTracks, self->tracks, self->trackCount * sizeof(spTrackEntry*));
+	memcpy(newTracks, self->tracks, self->tracksCount * sizeof(spTrackEntry*));
 	FREE(self->tracks);
 	self->tracks = newTracks;
-	self->trackCount = index + 1;
+	self->tracksCount = index + 1;
 	return 0;
 }
 
@@ -320,6 +317,6 @@ spTrackEntry* spAnimationState_addAnimation (spAnimationState* self, int trackIn
 }
 
 spTrackEntry* spAnimationState_getCurrent (spAnimationState* self, int trackIndex) {
-	if (trackIndex >= self->trackCount) return 0;
+	if (trackIndex >= self->tracksCount) return 0;
 	return self->tracks[trackIndex];
 }
